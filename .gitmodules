@@ -1,0 +1,21 @@
+[submodule "amazon-ads-api-go-sdk"]
+	path = amazon-ads-api-go-sdk
+	url = ./amazon-ads-api-go-sdk
+[submodule "auth-service"]
+	path = auth-service
+	url = ./auth-service
+[submodule "bid-consumer"]
+	path = bid-consumer
+	url = ./bid-consumer
+[submodule "bidder-frontend"]
+	path = bidder-frontend
+	url = ./bidder-frontend
+[submodule "bids-util"]
+	path = bids-util
+	url = ./bids-util
+[submodule "policy-service"]
+	path = policy-service
+	url = ./policy-service
+[submodule "bids-service"]
+	path = bids-service
+	url = ./bids-service

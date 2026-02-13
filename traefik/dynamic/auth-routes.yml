@@ -1,0 +1,21 @@
+http:
+  routers:
+    auth-router:
+      rule: "PathPrefix(`/auth/register`) || PathPrefix(`/auth/login`) || PathPrefix(`/auth/logout`) || PathPrefix(`/auth/refresh`) || Path(`/auth/health`)"
+      service: auth_service
+      entryPoints:
+        - web
+      middlewares:
+        - auth-health-rewrite
+
+  middlewares:
+    auth-health-rewrite:
+      replacePathRegex:
+        regex: "^/auth/health$"
+        replacement: "/health"
+
+  services:
+    auth_service:
+      loadBalancer:
+        servers:
+          - url: "http://auth_service:8080"

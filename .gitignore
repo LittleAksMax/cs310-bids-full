@@ -1,0 +1,8 @@
+postgres/auth_db/data
+redis/policy_cache/data
+redis/policy_cache/log
+policy_db/
+
+db_admin/
+
+.env*

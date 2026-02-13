@@ -1,0 +1,119 @@
+services:
+  traefik:
+    image: traefik:3.6.7
+    container_name: traefik
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./traefik/traefik.yml:/traefik.yml
+      - ./traefik/dynamic:/etc/traefik/dynamic
+    command:
+      - --api.insecure=true
+      - --providers.docker
+      - --entrypoints.web.address=:80
+    depends_on:
+      - auth_service
+    networks:
+      - bids_backend
+  rabbitmq:
+    image: rabbitmq:4.2-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    env_file: .env.rabbitmq
+    networks:
+      - bids_backend
+  bid-consumer:
+    build: bid-consumer/
+    container_name: bid-consumer
+    env_file: .env.bidconsumer
+    restart: unless-stopped
+    depends_on:
+      - rabbitmq
+    networks:
+      - bids_backend
+  policy_db:
+    container_name: policy_db
+    hostname: policy_db
+    image: mongo:8.0-noble
+    ports:
+      - "27017:27017"
+    env_file:
+      - .env.policy_db
+    restart: on-failure
+    volumes:
+      - ./policy_db:/data/db
+    networks:
+      - bids_backend
+  bids_db:
+    container_name: bids_db
+    hostname: bids_db
+    image: postgres:17
+    ports:
+      - "5432:5432"
+    env_file:
+      - .env.bids_db
+    networks:
+      - bids_backend
+    restart: on-failure
+    volumes:
+      - ./postgres/bids_db/data:/var/lib/postgresql/data
+  auth_db:
+    container_name: auth_db
+    hostname: auth_db
+    image: postgres:17
+    restart: always
+    ports:
+      - "5433:5432"
+    env_file:
+      - .env.auth_db
+    volumes:
+      - ./postgres/auth_db/data:/var/lib/postgresql/data
+    networks:
+      - bids_backend
+  auth_cache:
+    container_name: auth_cache
+    image: redis:alpine3.20
+    command: redis-server /usr/local/etc/redis/redis.conf
+    volumes:
+      - "./redis/auth_cache/redis.conf:/usr/local/etc/redis/redis.conf"
+      - "./redis/auth_cache/log:/var/opt/redislabs/log"
+      - "./auth_cache:/data"
+    ports:
+      - "6379:6379"
+    networks:
+      - bids_backend
+  auth_service:
+    build: ./auth-service
+    hostname: auth_service
+    container_name: auth_service
+    env_file:
+      - .env.auth_service
+      - .env.shared
+    restart: unless-stopped
+    ports:
+      - "8082:8080"
+    depends_on:
+      - auth_cache
+      - auth_db
+    networks:
+      - bids_backend
+  policy_cache:
+    container_name: policy_cache
+    image: redis:alpine3.20
+    command: redis-server /usr/local/etc/redis/redis.conf
+    volumes:
+      - "./redis/policy_cache/redis.conf:/usr/local/etc/redis/redis.conf"
+      - "./redis/policy_cache/log:/var/opt/redislabs/log"
+      - "./redis/policy_cache/data:/data"
+    ports:
+      - "6380:6379"
+    networks:
+      - bids_backend
+networks:
+  bids_backend:
+    name: bids_backend

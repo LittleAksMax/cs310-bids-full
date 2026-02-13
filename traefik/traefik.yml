@@ -1,0 +1,20 @@
+entryPoints:
+  web:
+    address: ":80"
+
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+  file:
+    directory: "/etc/traefik/dynamic"
+    watch: true
+
+api:
+  dashboard: true
+  insecure: true
+
+log:
+  level: DEBUG
+
+accessLog: {}
