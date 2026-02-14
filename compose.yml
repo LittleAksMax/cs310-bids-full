@@ -49,19 +49,6 @@ services:
       - ./policy_db:/data/db
     networks:
       - bids_backend
-  bids_db:
-    container_name: bids_db
-    hostname: bids_db
-    image: postgres:17
-    ports:
-      - "5432:5432"
-    env_file:
-      - .env.bids_db
-    networks:
-      - bids_backend
-    restart: on-failure
-    volumes:
-      - ./postgres/bids_db/data:/var/lib/postgresql/data
   auth_db:
     container_name: auth_db
     hostname: auth_db
@@ -73,18 +60,6 @@ services:
       - .env.auth_db
     volumes:
       - ./postgres/auth_db/data:/var/lib/postgresql/data
-    networks:
-      - bids_backend
-  auth_cache:
-    container_name: auth_cache
-    image: redis:alpine3.20
-    command: redis-server /usr/local/etc/redis/redis.conf
-    volumes:
-      - "./redis/auth_cache/redis.conf:/usr/local/etc/redis/redis.conf"
-      - "./redis/auth_cache/log:/var/opt/redislabs/log"
-      - "./auth_cache:/data"
-    ports:
-      - "6379:6379"
     networks:
       - bids_backend
   auth_service:
