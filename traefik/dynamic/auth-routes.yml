@@ -6,9 +6,16 @@ http:
       entryPoints:
         - web
       middlewares:
+        - auth-header-transform
         - auth-health-rewrite
 
   middlewares:
+    auth-header-transform:
+      plugin:
+        authheader:
+          sharedSecretEnvVar: "AUTH_SHARED_SECRET"
+          authHeaderPrefix: "Bearer "
+
     auth-health-rewrite:
       replacePathRegex:
         regex: "^/auth/health$"

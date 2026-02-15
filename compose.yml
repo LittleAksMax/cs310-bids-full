@@ -10,10 +10,15 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./traefik/traefik.yml:/traefik.yml
       - ./traefik/dynamic:/etc/traefik/dynamic
+      - ./traefik-plugin-authheader:/plugins-local/src/github.com/LittleAksMax/traefik-plugin-authheader
+    env_file:
+      - .env.shared
+      - .env.traefik
     command:
       - --api.insecure=true
       - --providers.docker
       - --entrypoints.web.address=:80
+      - --experimental.localPlugins.authheader.moduleName=github.com/LittleAksMax/traefik-plugin-authheader
     depends_on:
       - auth_service
     networks:
@@ -73,7 +78,6 @@ services:
     ports:
       - "8082:8080"
     depends_on:
-      - auth_cache
       - auth_db
     networks:
       - bids_backend

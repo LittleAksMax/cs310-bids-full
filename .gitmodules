@@ -19,3 +19,6 @@
 [submodule "bids-service"]
 	path = bids-service
 	url = ./bids-service
+[submodule "traefik-plugin-authheader"]
+	path = traefik-plugin-authheader
+	url = ./traefik-plugin-authheader/
