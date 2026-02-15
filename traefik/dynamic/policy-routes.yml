@@ -1,0 +1,22 @@
+http:
+  routers:
+    policy-router:
+      rule: "PathPrefix(`/policies`) || PathPrefix(`/policies/health`)"
+      service: policy_service
+      entryPoints:
+        - web
+      middlewares:
+        - auth-header-transform
+        - policy-health-rewrite
+
+  middlewares:
+    policy-health-rewrite:
+      replacePathRegex:
+        regex: "^/policies/health$"
+        replacement: "/health"
+
+  services:
+    policy_service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:8081"

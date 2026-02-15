@@ -1,0 +1,7 @@
+http:
+  middlewares:
+    auth-header-transform:
+      plugin:
+        authheader:
+          sharedSecretEnvVar: "X_AUTH_SIG_SECRET"
+          authHeaderPrefix: "Bearer "

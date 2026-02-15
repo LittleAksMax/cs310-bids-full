@@ -10,6 +10,11 @@ providers:
     directory: "/etc/traefik/dynamic"
     watch: true
 
+experimental:
+  localPlugins:
+    authheader:
+      moduleName: github.com/LittleAksMax/traefik-plugin-authheader
+
 api:
   dashboard: true
   insecure: true

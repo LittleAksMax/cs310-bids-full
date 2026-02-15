@@ -15,10 +15,7 @@ services:
       - .env.shared
       - .env.traefik
     command:
-      - --api.insecure=true
-      - --providers.docker
-      - --entrypoints.web.address=:80
-      - --experimental.localPlugins.authheader.moduleName=github.com/LittleAksMax/traefik-plugin-authheader
+      - --configFile=/traefik.yml
     depends_on:
       - auth_service
     networks:
