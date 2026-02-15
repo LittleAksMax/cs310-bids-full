@@ -1,0 +1,9 @@
+displayName: Auth Header Transform
+type: middleware
+import: github.com/LittleAksMax/traefik-plugin-authheader
+
+summary: Transforms Authorization header into signed X-Auth-* headers
+
+testData:
+  SharedSecretEnvVar: X_AUTH_SIG_SECRET
+  AuthHeaderPrefix: "Bearer "
