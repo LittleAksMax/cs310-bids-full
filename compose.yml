@@ -78,6 +78,21 @@ services:
       - auth_db
     networks:
       - bids_backend
+  policy_service:
+    build: ./policy-service
+    hostname: policy_service
+    container_name: policy_service
+    env_file:
+      - .env.policy_service
+      - .env.shared
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    depends_on:
+      - policy_db
+      - policy_cache
+    networks:
+      - bids_backend
   policy_cache:
     container_name: policy_cache
     image: redis:alpine3.20
@@ -87,7 +102,7 @@ services:
       - "./redis/policy_cache/log:/var/opt/redislabs/log"
       - "./redis/policy_cache/data:/data"
     ports:
-      - "6380:6379"
+      - "6379:6379"
     networks:
       - bids_backend
 networks:

@@ -19,4 +19,4 @@ http:
     policy_service:
       loadBalancer:
         servers:
-          - url: "http://host.docker.internal:8081"
+          - url: "http://policy_service:8080"
