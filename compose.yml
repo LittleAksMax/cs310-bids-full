@@ -48,7 +48,8 @@ services:
       - .env.policy_db
     restart: on-failure
     volumes:
-      - ./policy_db:/data/db
+      - ./policy_db/data:/data/db
+      - ./policy_db/init-scripts:/docker-entrypoint-initdb.d:ro
     networks:
       - bids_backend
   auth_db:
