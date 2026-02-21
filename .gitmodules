@@ -22,3 +22,6 @@
 [submodule "traefik-plugin-authheader"]
 	path = traefik-plugin-authheader
 	url = ./traefik-plugin-authheader/
+[submodule "user-service"]
+	path = user-service
+	url = ./user-service

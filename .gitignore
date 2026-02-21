@@ -2,6 +2,9 @@ postgres/auth_db/data
 redis/policy_cache/data
 redis/policy_cache/log
 redis/policy_cache/redis.conf
+redis/users_cache/data
+redis/users_cache/log
+redis/users_cache/redis.conf
 policy_db/data/
 
 db_admin/
