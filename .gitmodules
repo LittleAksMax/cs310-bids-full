@@ -25,3 +25,6 @@
 [submodule "user-service"]
 	path = user-service
 	url = ./user-service
+[submodule "bidsetreg"]
+	path = bidsetreg
+	url = ./bidsetreg
