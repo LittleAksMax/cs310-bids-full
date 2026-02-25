@@ -4,7 +4,7 @@ http:
       rule: "PathPrefix(`/auth/register`) || PathPrefix(`/auth/login`) || PathPrefix(`/auth/logout`) || PathPrefix(`/auth/refresh`) || Path(`/auth/health`)"
       service: auth_service
       entryPoints:
-        - web
+        - websecure
       middlewares:
         - auth-health-rewrite
 

@@ -1,4 +1,5 @@
 postgres/auth_db/data
+postgres/users_db/data/
 redis/policy_cache/data
 redis/policy_cache/log
 redis/policy_cache/redis.conf
@@ -10,3 +11,4 @@ policy_db/data/
 db_admin/
 
 .env*
+*.pem

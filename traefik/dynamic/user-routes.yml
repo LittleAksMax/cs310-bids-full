@@ -1,0 +1,23 @@
+http:
+  routers:
+    users-router:
+      rule: "PathPrefix(`/users`) || PathPrefix(`/users/health`)"
+      service: users_service
+      entryPoints:
+        - websecure
+      middlewares:
+        - auth-header-transform
+        - users-health-rewrite
+
+  middlewares:
+    users-health-rewrite:
+      replacePathRegex:
+        regex: "^/users/health$"
+        replacement: "/health"
+
+  services:
+    users_service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:8080"
+          # - url: "http://users_service:8080"

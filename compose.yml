@@ -5,12 +5,14 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
+      - "443:443"
       - "8080:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./traefik/traefik.yml:/traefik.yml
       - ./traefik/dynamic:/etc/traefik/dynamic
       - ./traefik-plugin-authheader:/plugins-local/src/github.com/LittleAksMax/traefik-plugin-authheader
+      - ./certs:/etc/traefik/certs # Mount your mkcert certificates
     env_file:
       - .env.shared
       - .env.traefik
@@ -115,7 +117,20 @@ services:
       - "./redis/users_cache/log:/var/opt/redislabs/log"
       - "./redis/users_cache/data:/data"
     ports:
-      - "6379:6379"
+      - "6380:6379"
+    networks:
+      - bids_backend
+  users_db:
+    container_name: users_db
+    hostname: users_db
+    image: postgres:17
+    restart: always
+    ports:
+      - "5432:5432"
+    env_file:
+      - .env.users_db
+    volumes:
+      - ./postgres/users_db/data:/var/lib/postgresql/data
     networks:
       - bids_backend
 networks:

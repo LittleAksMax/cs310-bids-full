@@ -4,7 +4,7 @@ http:
       rule: "PathPrefix(`/policies`) || PathPrefix(`/policies/health`)"
       service: policy_service
       entryPoints:
-        - web
+        - websecure
       middlewares:
         - auth-header-transform
         - policy-health-rewrite
