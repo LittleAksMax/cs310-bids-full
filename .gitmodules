@@ -28,3 +28,6 @@
 [submodule "bidsetreg"]
 	path = bidsetreg
 	url = ./bidsetreg
+[submodule "bidscript"]
+	path = bidscript
+	url = ./bidscript
