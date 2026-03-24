@@ -1,7 +1,7 @@
 http:
   routers:
     auth-router:
-      rule: "PathPrefix(`/auth/register`) || PathPrefix(`/auth/login`) || PathPrefix(`/auth/logout`) || PathPrefix(`/auth/refresh`) || Path(`/auth/health`)"
+      rule: "Host(`localhost`) && (PathPrefix(`/auth/register`) || PathPrefix(`/auth/login`) || PathPrefix(`/auth/logout`) || PathPrefix(`/auth/refresh`) || Path(`/auth/health`))"
       service: auth_service
       entryPoints:
         - websecure

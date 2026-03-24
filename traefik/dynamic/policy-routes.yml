@@ -1,7 +1,7 @@
 http:
   routers:
     policy-router:
-      rule: "PathPrefix(`/policies`) || PathPrefix(`/policies/health`)"
+      rule: "Host(`localhost`) && (PathPrefix(`/policies`) || PathPrefix(`/policies/health`))"
       service: policy_service
       entryPoints:
         - websecure

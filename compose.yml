@@ -12,7 +12,7 @@ services:
       - ./traefik/traefik.yml:/traefik.yml
       - ./traefik/dynamic:/etc/traefik/dynamic
       - ./traefik-plugin-authheader:/plugins-local/src/github.com/LittleAksMax/traefik-plugin-authheader
-      - ./certs:/etc/traefik/certs # Mount your mkcert certificates
+      - ./certs:/etc/traefik/certs
     env_file:
       - .env.shared
       - .env.traefik

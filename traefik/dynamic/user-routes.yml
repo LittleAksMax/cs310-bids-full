@@ -1,7 +1,7 @@
 http:
   routers:
     users-router:
-      rule: "PathPrefix(`/users`) || PathPrefix(`/users/health`)"
+      rule: "Host(`localhost`) && (PathPrefix(`/user`) || PathPrefix(`/user/health`) || PathPrefix(`/lwa`))"
       service: users_service
       entryPoints:
         - websecure
@@ -12,12 +12,12 @@ http:
   middlewares:
     users-health-rewrite:
       replacePathRegex:
-        regex: "^/users/health$"
+        regex: "^/user/health$"
         replacement: "/health"
 
   services:
     users_service:
       loadBalancer:
         servers:
-          - url: "http://host.docker.internal:8080"
+          - url: "http://host.docker.internal:8083"
           # - url: "http://users_service:8080"
