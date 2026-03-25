@@ -19,5 +19,5 @@ http:
     users_service:
       loadBalancer:
         servers:
-          - url: "http://host.docker.internal:8083"
-          # - url: "http://users_service:8080"
+          # - url: "http://host.docker.internal:8083"
+          - url: "http://user_service:8080"

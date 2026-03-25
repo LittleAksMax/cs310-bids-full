@@ -133,6 +133,22 @@ services:
       - ./postgres/users_db/data:/var/lib/postgresql/data
     networks:
       - bids_backend
+  user_service:
+    build: ./user-service
+    hostname: user_service
+    container_name: user_service
+    env_file:
+      - .env.user_service
+      - .env.shared
+    restart: unless-stopped
+    ports:
+      - "8083:8080"
+    depends_on:
+      - users_db
+      - users_cache
+    networks:
+      - bids_backend
+
 networks:
   bids_backend:
     name: bids_backend
