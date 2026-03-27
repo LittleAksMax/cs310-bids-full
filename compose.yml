@@ -31,9 +31,9 @@ services:
     env_file: .env.rabbitmq
     networks:
       - bids_backend
-  bid-consumer:
+  bid_consumer:
     build: bid-consumer/
-    container_name: bid-consumer
+    container_name: bid_consumer
     env_file: .env.bidconsumer
     restart: unless-stopped
     depends_on:
