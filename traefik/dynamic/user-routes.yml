@@ -1,19 +1,25 @@
 http:
   routers:
     users-router:
-      rule: "Host(`localhost`) && (PathPrefix(`/user`) || PathPrefix(`/user/health`) || PathPrefix(`/lwa`))"
+      rule: "Host(`localhost`) && (PathPrefix(`/user`) || PathPrefix(`/user/health`) || PathPrefix(`/internal/users`) || PathPrefix(`/lwa`))"
       service: users_service
       entryPoints:
         - websecure
       middlewares:
         - auth-header-transform
         - users-health-rewrite
+        - users-internal-rewrite
 
   middlewares:
     users-health-rewrite:
       replacePathRegex:
         regex: "^/user/health$"
         replacement: "/health"
+
+    users-internal-rewrite:
+      replacePathRegex:
+        regex: "^/internal/users(.*)$" # NOTE: the plural form
+        replacement: "/internal$1"
 
   services:
     users_service:

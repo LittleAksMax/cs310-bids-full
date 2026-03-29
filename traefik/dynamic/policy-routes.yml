@@ -1,19 +1,25 @@
 http:
   routers:
     policy-router:
-      rule: "Host(`localhost`) && (PathPrefix(`/policies`) || PathPrefix(`/policies/health`))"
+      rule: "Host(`localhost`) && (PathPrefix(`/policies`) || PathPrefix(`/policies/health`) || PathPrefix(`/internal/policies`) || PathPrefix(`/convert`))"
       service: policy_service
       entryPoints:
         - websecure
       middlewares:
         - auth-header-transform
         - policy-health-rewrite
+        - policy-internal-rewrite
 
   middlewares:
     policy-health-rewrite:
       replacePathRegex:
         regex: "^/policies/health$"
         replacement: "/health"
+
+    policy-internal-rewrite:
+      replacePathRegex:
+        regex: "^/internal/policies(.*)$"
+        replacement: "/internal$1"
 
   services:
     policy_service:
