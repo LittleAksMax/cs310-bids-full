@@ -1,10 +1,10 @@
 http:
   routers:
     users-router:
-      rule: "Host(`localhost`) && (PathPrefix(`/user`) || PathPrefix(`/user/health`) || PathPrefix(`/internal/users`) || PathPrefix(`/lwa`))"
+      rule: "(Host(`localhost`) || Host(`traefik`)) && (PathPrefix(`/user`) || PathPrefix(`/user/health`) || PathPrefix(`/internal/users`) || PathPrefix(`/lwa`))"
       service: users_service
       entryPoints:
-        - websecure
+        - web
       middlewares:
         - auth-header-transform
         - users-health-rewrite

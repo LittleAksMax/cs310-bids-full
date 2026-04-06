@@ -1,0 +1,55 @@
+@startuml
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName Monospaced
+skinparam activity {
+  BackgroundColor white
+  BorderColor #1F2937
+  DiamondBackgroundColor #F8FAFC
+  DiamondBorderColor #1F2937
+  ArrowColor #1F2937
+  BarColor #1F2937
+  StartColor #1F2937
+  EndColor #1F2937
+}
+
+start
+
+fork
+  partition Receiver #F5F5F5 {
+    while (Is context cancelled?) is (no)
+      :Wait for poll interval;
+      :Get due schedules;
+      if (Schedules found?) then (yes)
+        :Load profile, choose token,\nmark PROCESSING;
+        :Dispatch process message;
+      endif
+    endwhile (yes)
+  }
+
+fork again
+  partition Processor #F0F0F0 {
+    while (Is context cancelled?) is (no)
+      :Receive job and configure Ads client;
+
+      fork
+        :Request report;
+        while (Report terminal?) is (no)
+          :Wait 30s and refresh report;
+        endwhile (yes)
+        :Download report;
+
+      fork again
+        :Fetch attached policies,\npolicies, and Ad Groups;
+        :Build prepared lookup;
+      end fork
+
+      :Decode report and evaluate policies;
+      :Publish bid changes\nand drive schedule;
+    endwhile (yes)
+  }
+
+end fork
+
+stop
+@enduml

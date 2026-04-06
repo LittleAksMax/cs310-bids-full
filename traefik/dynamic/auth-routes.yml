@@ -4,7 +4,7 @@ http:
       rule: "Host(`localhost`) && (PathPrefix(`/auth/register`) || PathPrefix(`/auth/login`) || PathPrefix(`/auth/logout`) || PathPrefix(`/auth/refresh`) || Path(`/auth/health`))"
       service: auth_service
       entryPoints:
-        - websecure
+        - web
       middlewares:
         - auth-health-rewrite
 

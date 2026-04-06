@@ -1,0 +1,29 @@
+@startuml
+actor Client
+participant "User\nService" as UserService
+participant "Amazon Auth\nAPI" as Amazon
+
+Client -> UserService: GET /lwa/{region}\n?redirect_uri=...
+activate UserService
+UserService -> UserService: Validate authenticated user + region
+UserService -> UserService: Encrypt state\n(user_id, region, redirect_url)
+UserService --> Client: 200 OK + redirectUrl
+deactivate UserService
+
+Client -> Amazon: Redirect to\n/ap/oa URL
+activate Amazon
+Amazon -> Amazon: Authenticate user\n+ collect consent
+Amazon --> UserService: GET /lwa/process_token?code=...&state=...
+deactivate Amazon
+
+activate UserService
+UserService -> UserService: Decrypt and parse state
+UserService -> Amazon: Exchange code for\nrefresh token
+activate Amazon
+Amazon --> UserService: Refresh token
+deactivate Amazon
+
+UserService -> UserService: Store refresh token for user + region
+UserService --> Client: 302 Redirect to\noriginal redirect_uri
+deactivate UserService
+@enduml
