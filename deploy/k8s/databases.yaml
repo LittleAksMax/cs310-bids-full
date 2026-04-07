@@ -1,0 +1,260 @@
+# Databases and caches - Deployments with PVC-backed persistent storage.
+# Host paths are parameterised in volumes.yaml.
+---
+# auth_db (Postgres)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-db
+  namespace: bidder
+  labels:
+    app: auth-db
+    network: bids-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-db
+  template:
+    metadata:
+      labels:
+        app: auth-db
+        network: bids-backend
+    spec:
+      containers:
+        - name: auth-db
+          image: postgres:17 # pinned, not 'latest'
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: auth-db-secret
+          volumeMounts:
+            - name: auth-db-data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: auth-db-data
+          persistentVolumeClaim:
+            claimName: auth-db-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-db
+  namespace: bidder
+spec:
+  selector:
+    app: auth-db
+  ports:
+    - port: 5432
+      targetPort: 5432
+
+---
+# users_db (Postgres)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: users-db
+  namespace: bidder
+  labels:
+    app: users-db
+    network: bids-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: users-db
+  template:
+    metadata:
+      labels:
+        app: users-db
+        network: bids-backend
+    spec:
+      containers:
+        - name: users-db
+          image: postgres:17
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: users-db-secret
+          volumeMounts:
+            - name: users-db-data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: users-db-data
+          persistentVolumeClaim:
+            claimName: users-db-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: users-db
+  namespace: bidder
+spec:
+  selector:
+    app: users-db
+  ports:
+    - port: 5432
+      targetPort: 5432
+
+---
+# policy_db (MongoDB)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: policy-db
+  namespace: bidder
+  labels:
+    app: policy-db
+    network: bids-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: policy-db
+  template:
+    metadata:
+      labels:
+        app: policy-db
+        network: bids-backend
+    spec:
+      containers:
+        - name: policy-db
+          image: mongo:8.0-noble
+          ports:
+            - containerPort: 27017
+          envFrom:
+            - secretRef:
+                name: policy-db-secret
+          volumeMounts:
+            - name: policy-db-data
+              mountPath: /data/db
+            - name: policy-db-init
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+      volumes:
+        - name: policy-db-data
+          persistentVolumeClaim:
+            claimName: policy-db-pvc
+        - name: policy-db-init
+          configMap:
+            name: policy-db-init-scripts
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: policy-db
+  namespace: bidder
+spec:
+  selector:
+    app: policy-db
+  ports:
+    - port: 27017
+      targetPort: 27017
+
+---
+# policy_cache (Redis)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: policy-cache
+  namespace: bidder
+  labels:
+    app: policy-cache
+    network: bids-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: policy-cache
+  template:
+    metadata:
+      labels:
+        app: policy-cache
+        network: bids-backend
+    spec:
+      containers:
+        - name: policy-cache
+          image: redis:alpine3.20
+          command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+          ports:
+            - containerPort: 6379
+          volumeMounts:
+            - name: redis-config
+              mountPath: /usr/local/etc/redis/redis.conf
+              subPath: redis.conf
+            - name: redis-data
+              mountPath: /data
+      volumes:
+        - name: redis-config
+          configMap:
+            name: policy-cache-config
+        - name: redis-data
+          persistentVolumeClaim:
+            claimName: policy-cache-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: policy-cache
+  namespace: bidder
+spec:
+  selector:
+    app: policy-cache
+  ports:
+    - port: 6379
+      targetPort: 6379
+
+---
+# users_cache (Redis)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: users-cache
+  namespace: bidder
+  labels:
+    app: users-cache
+    network: bids-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: users-cache
+  template:
+    metadata:
+      labels:
+        app: users-cache
+        network: bids-backend
+    spec:
+      containers:
+        - name: users-cache
+          image: redis:alpine3.20
+          command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+          ports:
+            - containerPort: 6379
+          volumeMounts:
+            - name: redis-config
+              mountPath: /usr/local/etc/redis/redis.conf
+              subPath: redis.conf
+            - name: redis-data
+              mountPath: /data
+      volumes:
+        - name: redis-config
+          configMap:
+            name: users-cache-config
+        - name: redis-data
+          persistentVolumeClaim:
+            claimName: users-cache-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: users-cache
+  namespace: bidder
+spec:
+  selector:
+    app: users-cache
+  ports:
+    - port: 6379
+      targetPort: 6379

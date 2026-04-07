@@ -1,0 +1,29 @@
+http:
+  routers:
+    users-router:
+      rule: "(Host(`localhost`) || Host(`traefik`)) && (PathPrefix(`/user`) || PathPrefix(`/user/health`) || PathPrefix(`/internal/users`) || PathPrefix(`/lwa`))"
+      service: users_service
+      entryPoints:
+        - web
+      middlewares:
+        - auth-header-transform
+        - users-health-rewrite
+        - users-internal-rewrite
+
+  middlewares:
+    users-health-rewrite:
+      replacePathRegex:
+        regex: "^/user/health$"
+        replacement: "/health"
+
+    users-internal-rewrite:
+      replacePathRegex:
+        regex: "^/internal/users(.*)$" # NOTE: the plural form
+        replacement: "/internal$1"
+
+  services:
+    users_service:
+      loadBalancer:
+        servers:
+          # - url: "http://host.docker.internal:8083"
+          - url: "http://user_service:8080"

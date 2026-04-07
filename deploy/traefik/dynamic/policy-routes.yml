@@ -1,0 +1,28 @@
+http:
+  routers:
+    policy-router:
+      rule: "(Host(`localhost`) || Host(`traefik`)) && (PathPrefix(`/policies`) || PathPrefix(`/policies/health`) || PathPrefix(`/internal/policies`) || PathPrefix(`/convert`))"
+      service: policy_service
+      entryPoints:
+        - web
+      middlewares:
+        - auth-header-transform
+        - policy-health-rewrite
+        - policy-internal-rewrite
+
+  middlewares:
+    policy-health-rewrite:
+      replacePathRegex:
+        regex: "^/policies/health$"
+        replacement: "/health"
+
+    policy-internal-rewrite:
+      replacePathRegex:
+        regex: "^/internal/policies(.*)$"
+        replacement: "/internal$1"
+
+  services:
+    policy_service:
+      loadBalancer:
+        servers:
+          - url: "http://policy_service:8080"

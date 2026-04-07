@@ -1,0 +1,164 @@
+# PersistentVolumes with parameterised hostPath for dev machines.
+# Substitute the ${..._HOST_PATH} variables with envsubst before applying.
+#
+# Usage:
+#   export AUTH_DB_HOST_PATH=/data/bidder/postgres/auth_db
+#   export USERS_DB_HOST_PATH=/data/bidder/postgres/users_db
+#   export POLICY_DB_HOST_PATH=/data/bidder/policy_db
+#   export POLICY_CACHE_HOST_PATH=/data/bidder/redis/policy_cache
+#   export USERS_CACHE_HOST_PATH=/data/bidder/redis/users_cache
+#   envsubst < k8s/volumes.yaml | kubectl apply -f -
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: auth-db-pv
+  labels:
+    app: auth-db
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes: ["ReadWriteOnce"]
+  hostPath:
+    path: "${AUTH_DB_HOST_PATH}"
+    type: DirectoryOrCreate
+  storageClassName: manual
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: auth-db-pvc
+  namespace: bidder
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: manual
+  resources:
+    requests:
+      storage: 1Gi
+  selector:
+    matchLabels:
+      app: auth-db
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: users-db-pv
+  labels:
+    app: users-db
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes: ["ReadWriteOnce"]
+  hostPath:
+    path: "${USERS_DB_HOST_PATH}"
+    type: DirectoryOrCreate
+  storageClassName: manual
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: users-db-pvc
+  namespace: bidder
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: manual
+  resources:
+    requests:
+      storage: 1Gi
+  selector:
+    matchLabels:
+      app: users-db
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: policy-db-pv
+  labels:
+    app: policy-db
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes: ["ReadWriteOnce"]
+  hostPath:
+    path: "${POLICY_DB_HOST_PATH}"
+    type: DirectoryOrCreate
+  storageClassName: manual
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: policy-db-pvc
+  namespace: bidder
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: manual
+  resources:
+    requests:
+      storage: 1Gi
+  selector:
+    matchLabels:
+      app: policy-db
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: policy-cache-pv
+  labels:
+    app: policy-cache
+spec:
+  capacity:
+    storage: 512Mi
+  accessModes: ["ReadWriteOnce"]
+  hostPath:
+    path: "${POLICY_CACHE_HOST_PATH}"
+    type: DirectoryOrCreate
+  storageClassName: manual
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: policy-cache-pvc
+  namespace: bidder
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: manual
+  resources:
+    requests:
+      storage: 512Mi
+  selector:
+    matchLabels:
+      app: policy-cache
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: users-cache-pv
+  labels:
+    app: users-cache
+spec:
+  capacity:
+    storage: 512Mi
+  accessModes: ["ReadWriteOnce"]
+  hostPath:
+    path: "${USERS_CACHE_HOST_PATH}"
+    type: DirectoryOrCreate
+  storageClassName: manual
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: users-cache-pvc
+  namespace: bidder
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: manual
+  resources:
+    requests:
+      storage: 512Mi
+  selector:
+    matchLabels:
+      app: users-cache

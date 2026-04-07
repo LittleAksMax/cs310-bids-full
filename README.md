@@ -109,13 +109,6 @@ That should bring up all the services, databases, caches, and the reverse proxy 
 
 ---
 
-## Kubernetes
+## Kubernetes and Deployment
 
-Kubernetes configurations can be generated from the `compose.yml` using [Kompose](https://kompose.io/):
-
-```bash
-brew install kompose
-kompose convert -f compose.yml -o k8s/
-```
-
-This section is a work in progress -- K8s deployment hasn't been fully set up yet.
+See the [deployment instructions](./deploy/DEPLOYMENT.md).

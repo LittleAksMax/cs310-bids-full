@@ -47,7 +47,7 @@ services:
     networks:
       - bids_backend
   auth_service:
-    build: ./auth-service
+    image: mongo:8.0-noble
     hostname: auth_service
     container_name: auth_service
     env_file:
@@ -137,18 +137,6 @@ services:
     depends_on:
       - user_service
       - policy_service
-    networks:
-      - bids_backend
-  nginx:
-    image: nginx:alpine
-    container_name: nginx_proxy
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./certs:/etc/nginx/certs:ro
     networks:
       - bids_backend
   bidder_frontend:

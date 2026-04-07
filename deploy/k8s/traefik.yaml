@@ -1,0 +1,103 @@
+# Traefik deployment for K8S
+# In production, Traefik uses the file provider (not Docker provider).
+# The auth header plugin is loaded via an initContainer that copies it in.
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: traefik-config
+  namespace: bidder
+data:
+  traefik.yml: |
+    entryPoints:
+      web:
+        address: ":81"
+
+    # In K8S we use the file provider instead of the Docker provider.
+    # Routes are defined in the dynamic config files, same as before.
+    providers:
+      file:
+        directory: "/etc/traefik/dynamic"
+        watch: true
+
+    experimental:
+      localPlugins:
+        authheader:
+          moduleName: github.com/LittleAksMax/traefik-plugin-authheader
+
+    api:
+      dashboard: false      # disabled in production
+      insecure: false
+
+    log:
+      level: WARN           # less verbose in production
+
+    accessLog: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: traefik
+  namespace: bidder
+  labels:
+    app: traefik
+    network: bids-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: traefik
+  template:
+    metadata:
+      labels:
+        app: traefik
+        network: bids-backend
+    spec:
+      containers:
+        - name: traefik
+          image: traefik:3.6.7 # pinned version
+          args: ["--configFile=/traefik.yml"]
+          ports:
+            - containerPort: 81
+            - containerPort: 8080
+          envFrom:
+            - secretRef:
+                name: traefik-secret
+            - configMapRef:
+                name: shared-config
+          volumeMounts:
+            - name: traefik-static
+              mountPath: /traefik.yml
+              subPath: traefik.yml
+            - name: traefik-dynamic
+              mountPath: /etc/traefik/dynamic
+            - name: traefik-plugin
+              mountPath: /plugins-local/src/github.com/LittleAksMax/traefik-plugin-authheader
+      volumes:
+        - name: traefik-static
+          configMap:
+            name: traefik-config
+        - name: traefik-dynamic
+          configMap:
+            name: traefik-dynamic-config
+        - name: traefik-plugin
+          configMap:
+            name: traefik-authheader-plugin
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: traefik
+  namespace: bidder
+spec:
+  type: NodePort
+  selector:
+    app: traefik
+  ports:
+    - name: web
+      port: 81
+      targetPort: 81
+      nodePort: 30080 # adjust in ports.yaml
+    - name: dashboard
+      port: 8080
+      targetPort: 8080

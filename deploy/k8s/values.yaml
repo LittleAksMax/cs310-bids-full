@@ -1,0 +1,79 @@
+# ============================================================
+# values.yaml - Central configuration for the K8S deployment
+# ============================================================
+# This file is NOT consumed by Kubernetes directly.
+# It is used as a reference when generating manifests, and
+# can be consumed by a templating tool (e.g. envsubst, Helm).
+# ============================================================
+
+# -- AWS ECR Configuration --
+aws:
+  accountId: "123456789012" # Your AWS account ID
+  region: "eu-west-2"
+  pullSecret: "ecr-pull-secret" # name of the docker-registry Secret for ECR auth
+
+# -- Image Registry --
+# All custom images are pushed to ECR under bidder/<name>:<version>
+# The full URI is: <accountId>.dkr.ecr.<region>.amazonaws.com/bidder/<name>:<version>
+images:
+  auth_service:
+    name: "auth-service"
+    version: "1.0.0"
+  user_service:
+    name: "user-service"
+    version: "1.0.0"
+  policy_service:
+    name: "policy-service"
+    version: "1.0.0"
+  bids_service:
+    name: "bids-service"
+    version: "1.0.0"
+  bidder_frontend:
+    name: "bidder-frontend"
+    version: "1.0.0"
+
+# -- Third-party images (pinned versions, not 'latest') --
+vendor_images:
+  traefik: "traefik:3.6.7"
+  postgres: "postgres:17"
+  mongo: "mongo:8.0-noble"
+  redis: "redis:alpine3.20"
+
+# -- Ports --
+# External ports exposed via NodePort or LoadBalancer.
+# Internal ports are always 8080 for Go services, 81 for the frontend.
+ports:
+  traefik: 8080
+  auth_service: 8082
+  policy_service: 8081
+  user_service: 8083
+  bidder_frontend: 81
+  auth_db: 5433
+  users_db: 5432
+  policy_db: 27017
+  policy_cache: 6379
+  users_cache: 6380
+
+# -- Domain --
+# Used in Traefik routing rules. Change this for production.
+domain: "localhost"
+
+# -- Storage (host paths for dev machines) --
+# These are the host-side paths where data is persisted.
+# On minikube, these resolve inside the minikube VM.
+# Change these to match your dev machine's directory layout.
+storage:
+  auth_db: "./postgres/auth_db"
+  users_db: "./postgres/users_db"
+  policy_db: "./policy_db"
+  policy_cache: "/data/bidder/redis/policy_cache"
+  users_cache: "./redis/users_cache"
+
+# -- Networks --
+# In K8S, network isolation is done with NetworkPolicies.
+# These map to the Docker Compose networks:
+#   bids_backend  -> all backend services, databases, caches, traefik
+#   bids_frontend -> frontend + traefik only
+networks:
+  backend: "bids-backend"
+  frontend: "bids-frontend"
