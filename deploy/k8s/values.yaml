@@ -8,7 +8,7 @@
 
 # -- AWS ECR Configuration --
 aws:
-  accountId: "123456789012" # Your AWS account ID
+  accountId: "854241377966" # Your AWS account ID
   region: "eu-west-2"
   pullSecret: "ecr-pull-secret" # name of the docker-registry Secret for ECR auth
 
@@ -16,24 +16,24 @@ aws:
 # All custom images are pushed to ECR under bidder/<name>:<version>
 # The full URI is: <accountId>.dkr.ecr.<region>.amazonaws.com/bidder/<name>:<version>
 images:
-  auth_service:
+  auth-service:
     name: "auth-service"
-    version: "1.0.0"
-  user_service:
+    version: "v1.0.0"
+  user-service:
     name: "user-service"
-    version: "1.0.0"
-  policy_service:
+    version: "v1.0.0"
+  policy-service:
     name: "policy-service"
-    version: "1.0.0"
-  bids_service:
+    version: "v1.0.0"
+  bids-service:
     name: "bids-service"
-    version: "1.0.0"
-  bidder_frontend:
-    name: "bidder-frontend"
-    version: "1.0.0"
+    version: "v1.0.0"
+  frontend:
+    name: "frontend"
+    version: "v1.0.0"
 
 # -- Third-party images (pinned versions, not 'latest') --
-vendor_images:
+vendor-images:
   traefik: "traefik:3.6.7"
   postgres: "postgres:17"
   mongo: "mongo:8.0-noble"
@@ -44,15 +44,15 @@ vendor_images:
 # Internal ports are always 8080 for Go services, 81 for the frontend.
 ports:
   traefik: 8080
-  auth_service: 8082
-  policy_service: 8081
-  user_service: 8083
-  bidder_frontend: 81
-  auth_db: 5433
-  users_db: 5432
-  policy_db: 27017
-  policy_cache: 6379
-  users_cache: 6380
+  auth-service: 8082
+  policy-service: 8081
+  user-service: 8083
+  bidder-frontend: 81
+  auth-db: 5433
+  users-db: 5432
+  policy-db: 27017
+  policy-cache: 6379
+  users-cache: 6380
 
 # -- Domain --
 # Used in Traefik routing rules. Change this for production.
@@ -65,11 +65,11 @@ domain:
 # On minikube, these resolve inside the minikube VM.
 # Change these to match your dev machine's directory layout.
 storage:
-  auth_db: "/data/bidder/postgres/auth_db"
-  users_db: "/data/bidder/postgres/users_db"
-  policy_db: "/data/bidder/policy_db"
-  policy_cache: "/data/bidder/redis/policy_cache"
-  users_cache: "/data/bidder/redis/users_cache"
+  auth-db: "/data/bidder/postgres/auth_db"
+  users-db: "/data/bidder/postgres/users_db"
+  policy-db: "/data/bidder/policy_db"
+  policy-cache: "/data/bidder/redis/policy_cache"
+  users-cache: "/data/bidder/redis/users_cache"
 
 # -- Networks --
 # In K8S, network isolation is done with NetworkPolicies.

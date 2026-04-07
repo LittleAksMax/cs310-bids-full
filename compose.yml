@@ -17,71 +17,71 @@ services:
     command:
       - --configFile=/traefik.yml
     depends_on:
-      - auth_service
+      - auth-service
     networks:
       - bids_backend
-  policy_db:
-    container_name: policy_db
-    hostname: policy_db
+  policy-db:
+    container_name: policy-db
+    hostname: policy-db
     image: mongo:8.0-noble
     ports:
       - "27017:27017"
     env_file:
-      - .env.policy_db
+      - .env.policy-db
     restart: on-failure
     volumes:
       - ./policy_db/data:/data/db
       - ./policy_db/init-scripts:/docker-entrypoint-initdb.d:ro
     networks:
       - bids_backend
-  auth_db:
-    container_name: auth_db
-    hostname: auth_db
+  auth-db:
+    container_name: auth-db
+    hostname: auth-db
     image: postgres:17
     restart: always
     ports:
       - "5433:5432"
     env_file:
-      - .env.auth_db
+      - .env.auth-db
     volumes:
       - ./postgres/auth_db/data:/var/lib/postgresql/data
     networks:
       - bids_backend
-  auth_service:
+  auth-service:
     build: ./auth-service
-    hostname: auth_service
-    container_name: auth_service
+    hostname: auth-service
+    container_name: auth-service
     env_file:
-      - .env.auth_service.secret
-      - .env.auth_service.config
+      - .env.auth-service.secret
+      - .env.auth-service.config
       - .env.shared.secret
       - .env.shared.config
     restart: unless-stopped
     ports:
       - "8082:8080"
     depends_on:
-      - auth_db
+      - auth-db
     networks:
       - bids_backend
-  policy_service:
+  policy-service:
     build: ./policy-service
-    hostname: policy_service
-    container_name: policy_service
+    hostname: policy-service
+    container_name: policy-service
     env_file:
-      - .env.policy_service.secret
-      - .env.policy_service.config
+      - .env.policy-service.secret
+      - .env.policy-service.config
       - .env.shared.secret
       - .env.shared.config
     restart: unless-stopped
     ports:
       - "8081:8080"
     depends_on:
-      - policy_db
-      - policy_cache
+      - policy-db
+      - policy-cache
     networks:
       - bids_backend
-  policy_cache:
-    container_name: policy_cache
+  policy-cache:
+    container_name: policy-cache
     image: redis:alpine3.20
     command: redis-server /usr/local/etc/redis/redis.conf
     volumes:
@@ -92,8 +92,8 @@ services:
       - "6379:6379"
     networks:
       - bids_backend
-  users_cache:
-    container_name: users_cache
+  users-cache:
+    container_name: users-cache
     image: redis:alpine3.20
     command: redis-server /usr/local/etc/redis/redis.conf
     volumes:
@@ -104,48 +104,48 @@ services:
       - "6380:6379"
     networks:
       - bids_backend
-  users_db:
-    container_name: users_db
-    hostname: users_db
+  users-db:
+    container_name: users-db
+    hostname: users-db
     image: postgres:17
     restart: always
     ports:
       - "5432:5432"
     env_file:
-      - .env.users_db
+      - .env.users-db
     volumes:
       - ./postgres/users_db/data:/var/lib/postgresql/data
     networks:
       - bids_backend
-  user_service:
+  user-service:
     build: ./user-service
-    hostname: user_service
-    container_name: user_service
+    hostname: user-service
+    container_name: user-service
     env_file:
-      - .env.user_service.secret
-      - .env.user_service.config
+      - .env.user-service.secret
+      - .env.user-service.config
       - .env.shared.secret
       - .env.shared.config
     restart: unless-stopped
     ports:
       - "8083:8080"
     depends_on:
-      - users_db
-      - users_cache
+      - users-db
+      - users-cache
     networks:
       - bids_backend
-  bids_service:
+  bids-service:
     build: ./bids-service
-    container_name: bids_service
+    container_name: bids-service
     env_file:
-      - .env.bids_service.secret
-      - .env.bids_service.config
+      - .env.bids-service.secret
+      - .env.bids-service.config
       - .env.shared.secret
       - .env.shared.config
     restart: unless-stopped
     depends_on:
-      - user_service
-      - policy_service
+      - user-service
+      - policy-service
     networks:
       - bids_backend
   nginx:
@@ -155,23 +155,26 @@ services:
     ports:
       - "80:80"
       - "443:443"
+      - "81:81"
+      - "444:444"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - ./certs:/etc/nginx/certs:ro
     networks:
       - bids_frontend
-  bidder_frontend:
+      - bids_backend
+  bidder-frontend:
     build: ./bidder-frontend
-    container_name: bidder_frontend
+    container_name: bidder-frontend
     env_file:
-      - .env.bidder_frontend
+      - .env.bidder-frontend
     restart: unless-stopped
     ports:
       - "81:81"
     depends_on:
-      - user_service
-      - policy_service
-      - auth_service
+      - user-service
+      - policy-service
+      - auth-service
       - traefik
     networks:
       - bids_frontend

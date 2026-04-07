@@ -2,7 +2,7 @@ http:
   routers:
     users-router:
       rule: "(Host(`localhost`) || Host(`traefik`)) && (PathPrefix(`/user`) || PathPrefix(`/user/health`) || PathPrefix(`/internal/users`) || PathPrefix(`/lwa`))"
-      service: users_service
+      service: user-service
       entryPoints:
         - web
       middlewares:
@@ -22,8 +22,8 @@ http:
         replacement: "/internal$1"
 
   services:
-    users_service:
+    user-service:
       loadBalancer:
         servers:
           # - url: "http://host.docker.internal:8083"
-          - url: "http://user_service:8080"
+          - url: "http://user-service:8080"

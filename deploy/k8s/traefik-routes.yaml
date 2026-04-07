@@ -13,7 +13,7 @@ data:
       routers:
         auth-router:
           rule: "Host(`${BACKEND_DOMAIN}`) && (PathPrefix(`/auth/register`) || PathPrefix(`/auth/login`) || PathPrefix(`/auth/logout`) || PathPrefix(`/auth/refresh`) || Path(`/auth/health`))"
-          service: auth_service
+          service: auth-service
           entryPoints:
             - web
           middlewares:
@@ -24,7 +24,7 @@ data:
             regex: "^/auth/health$"
             replacement: "/health"
       services:
-        auth_service:
+        auth-service:
           loadBalancer:
             servers:
               - url: "http://auth-service.bidder.svc.cluster.local:8080"
@@ -34,7 +34,7 @@ data:
       routers:
         policy-router:
           rule: "Host(`${BACKEND_DOMAIN}`) && (PathPrefix(`/policies`) || PathPrefix(`/policies/health`) || PathPrefix(`/internal/policies`) || PathPrefix(`/convert`))"
-          service: policy_service
+          service: policy-service
           entryPoints:
             - web
           middlewares:
@@ -51,7 +51,7 @@ data:
             regex: "^/internal/policies(.*)$"
             replacement: "/internal$1"
       services:
-        policy_service:
+        policy-service:
           loadBalancer:
             servers:
               - url: "http://policy-service.bidder.svc.cluster.local:8080"
@@ -61,7 +61,7 @@ data:
       routers:
         users-router:
           rule: "Host(`${BACKEND_DOMAIN}`) && (PathPrefix(`/user`) || PathPrefix(`/user/health`) || PathPrefix(`/internal/users`) || PathPrefix(`/lwa`))"
-          service: users_service
+          service: user-service
           entryPoints:
             - web
           middlewares:
@@ -78,7 +78,7 @@ data:
             regex: "^/internal/users(.*)$"
             replacement: "/internal$1"
       services:
-        users_service:
+        user-service:
           loadBalancer:
             servers:
               - url: "http://user-service.bidder.svc.cluster.local:8080"

@@ -5,7 +5,7 @@
 #   ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/bidder/<name>:<version>
 # Replace these with actual values from values.yaml, or use envsubst.
 ---
-# auth_service
+# auth-service
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -56,7 +56,7 @@ spec:
       targetPort: 8080
 
 ---
-# policy_service
+# policy-service
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -107,7 +107,7 @@ spec:
       targetPort: 8080
 
 ---
-# user_service
+# user-service
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -158,7 +158,7 @@ spec:
       targetPort: 8080
 
 ---
-# bids_service
+# bids-service
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -194,8 +194,8 @@ spec:
             - configMapRef:
                 name: shared-config
 ---
-# bids_service has no external Service (internal polling only)
-# bidder_frontend
+# bids-service has no external Service (internal polling only)
+# bidder-frontend
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -219,7 +219,7 @@ spec:
         - name: ${ECR_PULL_SECRET}
       containers:
         - name: bidder-frontend
-          image: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/bidder/bidder-frontend:${FRONTEND_VERSION}
+          image: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/bidder/frontend:${FRONTEND_VERSION}
           imagePullPolicy: Always
           ports:
             - containerPort: 81

@@ -2,7 +2,7 @@ http:
   routers:
     policy-router:
       rule: "(Host(`localhost`) || Host(`traefik`)) && (PathPrefix(`/policies`) || PathPrefix(`/policies/health`) || PathPrefix(`/internal/policies`) || PathPrefix(`/convert`))"
-      service: policy_service
+      service: policy-service
       entryPoints:
         - web
       middlewares:
@@ -22,7 +22,7 @@ http:
         replacement: "/internal$1"
 
   services:
-    policy_service:
+    policy-service:
       loadBalancer:
         servers:
-          - url: "http://policy_service:8080"
+          - url: "http://policy-service:8080"

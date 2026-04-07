@@ -5,7 +5,7 @@
 All via brew:
 
 - `docker`
-- `kubectl`
+- `kubectl` -- [Install](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/)
 - `minikube` (local K8S cluster, start with `minikube start`)
 - `k9s` (CLI kubernetes manager) -- [Install](https://k9scli.io/topics/install/)
 - `kompose` (Compose to K8S conversion)
@@ -75,9 +75,16 @@ Vendor images (Postgres, Mongo, Redis, Traefik) are pinned directly in manifests
 
 ## Secrets and config
 
-Each `.env` file is split into a `.secret` (sensitive) and `.config` (non-sensitive) variant. Database env files (`.env.auth_db`, `.env.users_db`, `.env.policy_db`) are kept as pure secrets. `.env.bidder_frontend` is kept as a pure configmap.
+Each `.env` file is split into a `.secret` (sensitive) and `.config` (non-sensitive) variant. Database env files (`.env.auth-db`, `.env.users-db`, `.env.policy-db`) are kept as pure secrets. `.env.bidder-frontend` is kept as a pure configmap.
 
-The [`create-k8s-secrets.sh`](create-k8s-secrets.sh) script creates all Secrets and ConfigMaps from the split files. It is idempotent (safe to re-run):
+The script also creates file-based ConfigMaps that are volume-mounted into pods:
+
+- `policy-cache-config` — Redis config from `redis/policy_cache/redis.conf`
+- `users-cache-config` — Redis config from `redis/users_cache/redis.conf`
+- `policy-db-init-scripts` — MongoDB init script from `policy_db/init-scripts/`
+- `traefik-authheader-plugin` — Traefik plugin source from `traefik-plugin-authheader/`
+
+The [`create-k8s-secrets.sh`](create-k8s-secrets.sh) script creates all Secrets and ConfigMaps. It is safe to re-run:
 
 ```bash
 ./create-k8s-secrets.sh ..
@@ -162,9 +169,94 @@ source ./load-values.sh k8s/values.yaml
 envsubst < k8s/traefik-routes.yaml | kubectl apply -f -
 ```
 
-## Nginx
+## Nginx and minikube networking
 
-Not included in production. The dev `nginx/` layer just simulates TLS termination with mkcert. In production, TLS is handled in front of the cluster (server Nginx or cloud LB).
+In production, TLS is handled in front of the cluster (server Nginx or cloud LB). For local dev with minikube, an nginx container provides TLS termination and proxies to the K8S NodePorts.
+
+### How it works
+
+Minikube runs as a Docker container with its own IP. K8S Services of type `NodePort` are reachable at `<minikube-ip>:<nodePort>`. The nginx container joins minikube's Docker network so it can reach those ports, then exposes HTTPS on `localhost`.
+
+```
+Browser --HTTPS--> nginx (localhost:443/444) --HTTP--> minikube:NodePort --> K8S Service --> Pod
+```
+
+### Getting the minikube IP
+
+```bash
+minikube ip
+```
+
+This is typically `192.168.49.2` but can change. If it changes, update the `upstream` blocks in [`nginx/k8s.conf`](../nginx/k8s.conf).
+
+### Getting the NodePorts
+
+After deploying, check which ports K8S assigned:
+
+```bash
+kubectl get services -n bidder
+```
+
+Look for the `NodePort` column on `traefik` and `bidder-frontend`:
+
+| Service           | Port mapping   | Meaning                       |
+| ----------------- | -------------- | ----------------------------- |
+| `traefik`         | `81:30080/TCP` | API gateway on NodePort 30080 |
+| `bidder-frontend` | `81:30081/TCP` | Frontend on NodePort 30081    |
+
+These NodePort values are set in [`k8s/traefik.yaml`](k8s/traefik.yaml) and [`k8s/services.yaml`](k8s/services.yaml). If K8S assigns different ports, update the `upstream` blocks in `nginx/k8s.conf` to match.
+
+### nginx/k8s.conf
+
+The config defines two server pairs (HTTP redirect + HTTPS):
+
+- **Ports 80/443** → traefik NodePort (API gateway)
+- **Ports 81/444** → bidder-frontend NodePort
+
+Each uses mkcert TLS certificates from `certs/`. The backend uses `localhost+2.pem`, the frontend uses `frontend-localhost+2.pem`.
+
+### Running nginx alongside minikube
+
+The nginx container must be on minikube's Docker network to reach `192.168.49.2`. This is configured in [`compose.prod.yml`](compose.prod.yml):
+
+```yaml
+services:
+  nginx:
+    networks:
+      - minikube
+networks:
+  minikube:
+    external: true # created by minikube start
+```
+
+Start it:
+
+```bash
+cd deploy
+docker compose -f compose.prod.yml up -d
+```
+
+Then access:
+
+- **API gateway**: `https://localhost` (port 443)
+- **Frontend**: `https://localhost:444`
+
+### Gotchas
+
+1. **minikube must be running first.** The `minikube` Docker network is created by `minikube start`. If nginx starts before minikube, Compose will fail because the external network doesn't exist yet.
+
+2. **IP can change.** If you delete and recreate the minikube cluster, the IP may change. Always verify with `minikube ip` and update `nginx/k8s.conf` if needed.
+
+3. **NodePorts are fixed in manifests, not dynamic.** The manifests pin `nodePort: 30080` and `nodePort: 30081`. If you change them in the manifests, update `nginx/k8s.conf` to match.
+
+4. **nginx container can't use `localhost`.** Inside the nginx container, `localhost` is itself. You must use minikube's IP (`192.168.49.2`) in the upstream blocks.
+
+5. **ECR tokens expire after 12 hours.** If pods enter `ImagePullBackOff` after a long uptime, refresh the ECR pull secret (step 5 in [Full deployment](#full-deployment)).
+
+6. **Restart nginx after config changes.** nginx reads `k8s.conf` at startup. After editing it:
+   ```bash
+   docker compose -f compose.prod.yml restart
+   ```
 
 ## Full deployment
 
@@ -177,39 +269,55 @@ minikube start
 # 2. namespace
 kubectl apply -f k8s/namespace.yaml
 
-# 3. secrets and config
-./create-k8s-secrets.sh ..
-
-# 4. load values from values.yaml
+# 3. load values from values.yaml
 source ./load-values.sh k8s/values.yaml
 
-# 5. network policies
+# 4. secrets and config
+./create-k8s-secrets.sh ..
+
+# 5. ECR pull secret
+TOKEN=$(aws ecr get-login-password --region eu-west-2)
+kubectl create secret docker-registry ecr-pull-secret \
+  --docker-server=${AWS_ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com \
+  --docker-username=AWS \
+  --docker-password="$TOKEN" \
+  --dry-run=client -o yaml | kubectl apply -n bidder -f -
+
+# 6. network policies
 kubectl apply -f k8s/network-policies.yaml
 
-# 6. persistent volumes
+# 7. persistent volumes
 envsubst < k8s/volumes.yaml | kubectl apply -f -
 
-# 7. databases and caches
+# 8. databases and caches
 kubectl apply -f k8s/databases.yaml
 
-# 8. traefik
+# 9. traefik
 kubectl apply -f k8s/traefik.yaml
 envsubst < k8s/traefik-routes.yaml | kubectl apply -f -
 
-# 9. application services
+# 10. application services
 envsubst < k8s/services.yaml | kubectl apply -f -
 
-# 10. verify
+# 11. mount data directory
+minikube mount /path/on/host:/data/bidder
+
+# 11. verify
 kubectl get pods -n bidder
 kubectl get services -n bidder
 ```
 
-Access on minikube:
+Access on minikube (via nginx TLS proxy):
 
 ```bash
-minikube service traefik -n bidder
-minikube service bidder-frontend -n bidder
+# start the nginx proxy (requires minikube to be running)
+docker compose -f compose.prod.yml up -d
 ```
+
+- API gateway: `https://localhost`
+- Frontend: `https://localhost:444`
+
+See [Nginx and minikube networking](#nginx-and-minikube-networking) for setup details and troubleshooting.
 
 ## Kompose
 
@@ -290,11 +398,19 @@ minikube start --driver=docker
 
 kubectl apply -f deploy/k8s/namespace.yaml
 
+# load values
+source deploy/load-values.sh deploy/k8s/values.yaml
+
 # secrets and config
 deploy/create-k8s-secrets.sh .
 
-# load values
-source deploy/load-values.sh deploy/k8s/values.yaml
+# ECR pull secret
+TOKEN=$(aws ecr get-login-password --region eu-west-2)
+kubectl create secret docker-registry ecr-pull-secret \
+  --docker-server=${AWS_ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com \
+  --docker-username=AWS \
+  --docker-password="$TOKEN" \
+  --dry-run=client -o yaml | kubectl apply -n bidder -f -
 
 # network policies
 kubectl apply -f deploy/k8s/network-policies.yaml

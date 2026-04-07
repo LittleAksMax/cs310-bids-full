@@ -2,7 +2,7 @@ http:
   routers:
     auth-router:
       rule: "Host(`localhost`) && (PathPrefix(`/auth/register`) || PathPrefix(`/auth/login`) || PathPrefix(`/auth/logout`) || PathPrefix(`/auth/refresh`) || Path(`/auth/health`))"
-      service: auth_service
+      service: auth-service
       entryPoints:
         - web
       middlewares:
@@ -15,7 +15,7 @@ http:
         replacement: "/health"
 
   services:
-    auth_service:
+    auth-service:
       loadBalancer:
         servers:
-          - url: "http://auth_service:8080"
+          - url: "http://auth-service:8080"

@@ -1,7 +1,7 @@
 # Databases and caches - Deployments with PVC-backed persistent storage.
 # Host paths are parameterised in volumes.yaml.
 ---
-# auth_db (Postgres)
+# auth-db (Postgres)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -50,7 +50,7 @@ spec:
       targetPort: 5432
 
 ---
-# users_db (Postgres)
+# users-db (Postgres)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -99,7 +99,7 @@ spec:
       targetPort: 5432
 
 ---
-# policy_db (MongoDB)
+# policy-db (MongoDB)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -154,7 +154,7 @@ spec:
       targetPort: 27017
 
 ---
-# policy_cache (Redis)
+# policy-cache (Redis)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -207,7 +207,7 @@ spec:
       targetPort: 6379
 
 ---
-# users_cache (Redis)
+# users-cache (Redis)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
