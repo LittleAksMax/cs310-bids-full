@@ -1,33 +1,33 @@
 [submodule "amazon-ads-api-go-sdk"]
 	path = amazon-ads-api-go-sdk
-	url = ./amazon-ads-api-go-sdk
+	url = https://github.com/LittleAksMax/amazon-ads-api-sdk-go.git
 [submodule "auth-service"]
 	path = auth-service
-	url = ./auth-service
+	url = https://github.com/LittleAksMax/bids-auth-service.git
 [submodule "bid-consumer"]
 	path = bid-consumer
-	url = ./bid-consumer
+	url = https://github.com/LittleAksMax/bid-consumer.git
 [submodule "bidder-frontend"]
 	path = bidder-frontend
-	url = ./bidder-frontend
+	url = https://github.com/LittleAksMax/bidder-frontend.git
 [submodule "bids-util"]
 	path = bids-util
-	url = ./bids-util
+	url = https://github.com/LittleAksMax/bids-util.git
 [submodule "policy-service"]
 	path = policy-service
-	url = ./policy-service
+	url = https://github.com/LittleAksMax/bids-policy-service.git
 [submodule "bids-service"]
 	path = bids-service
-	url = ./bids-service
+	url = https://github.com/LittleAksMax/bids-service.git
 [submodule "traefik-plugin-authheader"]
 	path = traefik-plugin-authheader
-	url = ./traefik-plugin-authheader/
+	url = https://github.com/LittleAksMax/traefik-plugin-authheader.git
 [submodule "user-service"]
 	path = user-service
-	url = ./user-service
+	url = https://github.com/LittleAksMax/bids-user-service.git
 [submodule "bidsetreg"]
 	path = bidsetreg
-	url = ./bidsetreg
+	url = https://github.com/Green-Pyrus-Ltd/bidsetreg.git
 [submodule "bidscript"]
 	path = bidscript
 	url = ./bidscript

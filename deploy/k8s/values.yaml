@@ -55,7 +55,7 @@ ports:
   users-cache: 6380
 
 # -- Domain --
-# Used in Traefik routing rules. Change this for production.
+# Used in Traefik routing rules (so don't add schema -- 'https://'). Change this for production.
 domain:
   frontend: "localhost"
   backend: "localhost"
