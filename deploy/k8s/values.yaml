@@ -56,18 +56,20 @@ ports:
 
 # -- Domain --
 # Used in Traefik routing rules. Change this for production.
-domain: "localhost"
+domain:
+  frontend: "localhost"
+  backend: "localhost"
 
 # -- Storage (host paths for dev machines) --
 # These are the host-side paths where data is persisted.
 # On minikube, these resolve inside the minikube VM.
 # Change these to match your dev machine's directory layout.
 storage:
-  auth_db: "./postgres/auth_db"
-  users_db: "./postgres/users_db"
-  policy_db: "./policy_db"
+  auth_db: "/data/bidder/postgres/auth_db"
+  users_db: "/data/bidder/postgres/users_db"
+  policy_db: "/data/bidder/policy_db"
   policy_cache: "/data/bidder/redis/policy_cache"
-  users_cache: "./redis/users_cache"
+  users_cache: "/data/bidder/redis/users_cache"
 
 # -- Networks --
 # In K8S, network isolation is done with NetworkPolicies.

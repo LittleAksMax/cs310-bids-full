@@ -7,9 +7,26 @@ All via brew:
 - `docker`
 - `kubectl`
 - `minikube` (local K8S cluster, start with `minikube start`)
+- `k9s` (CLI kubernetes manager) -- [Install](https://k9scli.io/topics/install/)
 - `kompose` (Compose to K8S conversion)
 - `awscli` (configure with `aws configure`)
+- `yq` (read from yaml files from CLI) -- [Github](https://github.com/mikefarah/yq)
 
+## Cluster setup
+
+Start minikube and create the `bidder` namespace:
+
+```bash
+minikube start
+kubectl apply -f k8s/namespace.yaml
+```
+
+Verify the cluster is running and the namespace exists:
+
+```bash
+kubectl cluster-info
+kubectl get namespace bidder
+```
 
 ## Pushing images to ECR
 
@@ -31,14 +48,12 @@ cd auth-service && ../push-to-ecr.sh 123456789012 auth-service 1.0.0
 
 Repeat for: `auth-service`, `user-service`, `policy-service`, `bids-service`, `bidder-frontend` (which is just called `frontend` since it is `bidder/frontend`).
 
-
 ## Image Tags Problems (`latest`)
 
 - K8S with a non-`latest` tag defaults to `imagePullPolicy: IfNotPresent` (won't re-pull on change)
 - Different nodes can cache different versions of `latest`
 - Always use explicit version tags
 - Manifests set `imagePullPolicy: Always` as a safety net
-
 
 ## Parameterising images
 
@@ -51,39 +66,21 @@ image: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/bidder/auth-service
 Apply with `envsubst`:
 
 ```bash
-export AWS_ACCOUNT_ID=123456789012
-export AWS_REGION=eu-west-2
-export ECR_PULL_SECRET=ecr-pull-secret
-export AUTH_SERVICE_VERSION=1.0.0
-export USER_SERVICE_VERSION=1.0.0
-export POLICY_SERVICE_VERSION=1.0.0
-export BIDS_SERVICE_VERSION=1.0.0
-export FRONTEND_VERSION=1.0.0
+source ./load-values.sh
 
 envsubst < k8s/services.yaml | kubectl apply -f -
 ```
 
 Vendor images (Postgres, Mongo, Redis, Traefik) are pinned directly in manifests.
 
-
 ## Secrets and config
 
-`.env` files map to K8S **Secrets** (sensitive) and **ConfigMaps** (non-sensitive) via `--from-env-file`:
+Each `.env` file is split into a `.secret` (sensitive) and `.config` (non-sensitive) variant. Database env files (`.env.auth_db`, `.env.users_db`, `.env.policy_db`) are kept as pure secrets. `.env.bidder_frontend` is kept as a pure configmap.
+
+The [`create-k8s-secrets.sh`](create-k8s-secrets.sh) script creates all Secrets and ConfigMaps from the split files. It is idempotent (safe to re-run):
 
 ```bash
-# secrets
-kubectl create secret generic auth-db-secret       --from-env-file=../.env.auth_db       -n bidder
-kubectl create secret generic auth-service-secret   --from-env-file=../.env.auth_service   -n bidder
-kubectl create secret generic users-db-secret       --from-env-file=../.env.users_db       -n bidder
-kubectl create secret generic user-service-secret   --from-env-file=../.env.user_service   -n bidder
-kubectl create secret generic policy-db-secret      --from-env-file=../.env.policy_db      -n bidder
-kubectl create secret generic policy-service-secret --from-env-file=../.env.policy_service  -n bidder
-kubectl create secret generic bids-service-secret   --from-env-file=../.env.bids_service   -n bidder
-kubectl create secret generic traefik-secret        --from-env-file=../.env.traefik        -n bidder
-
-# config
-kubectl create configmap shared-config          --from-env-file=../.env.shared          -n bidder
-kubectl create configmap bidder-frontend-config --from-env-file=../.env.bidder_frontend  -n bidder
+./create-k8s-secrets.sh ..
 ```
 
 Manifests reference them with:
@@ -93,17 +90,19 @@ envFrom:
   - secretRef:
       name: auth-service-secret
   - configMapRef:
+      name: auth-service-config
+  - secretRef:
+      name: shared-secret
+  - configMapRef:
       name: shared-config
 ```
 
-To update a secret (no in-place update in K8S):
+To update a secret, edit the `.secret` file and re-run the script:
 
 ```bash
-kubectl delete secret auth-service-secret -n bidder
-kubectl create secret generic auth-service-secret --from-env-file=../.env.auth_service -n bidder
+./create-k8s-secrets.sh ..
 kubectl rollout restart deployment/auth-service -n bidder
 ```
-
 
 ## Ports
 
@@ -119,7 +118,6 @@ Reference: [`k8s/ports.yaml`](k8s/ports.yaml)
 - Traefik, frontend: NodePort (swap to LoadBalancer for cloud)
 - Edit `nodePort` values in `k8s/traefik.yaml` and `k8s/services.yaml`
 
-
 ## Storage paths
 
 Compose volumes (`./postgres/auth_db/data:/var/lib/...`) become PV + PVC pairs in K8S.
@@ -129,18 +127,12 @@ Compose volumes (`./postgres/auth_db/data:/var/lib/...`) become PV + PVC pairs i
 - Host paths parameterised in [`k8s/volumes.yaml`](k8s/volumes.yaml), defaults in [`k8s/values.yaml`](k8s/values.yaml)
 
 ```bash
-export AUTH_DB_HOST_PATH=/data/bidder/postgres/auth_db
-export USERS_DB_HOST_PATH=/data/bidder/postgres/users_db
-export POLICY_DB_HOST_PATH=/data/bidder/policy_db
-export POLICY_CACHE_HOST_PATH=/data/bidder/redis/policy_cache
-export USERS_CACHE_HOST_PATH=/data/bidder/redis/users_cache
-
+source ./load-values.sh k8s/values.yaml
 envsubst < k8s/volumes.yaml | kubectl apply -f -
 ```
 
 - Minikube: paths resolve inside the VM, not on host. Mount with `minikube mount /host/path:/data/bidder`
 - Container-side paths (`/var/lib/postgresql/data`, `/data/db`, etc.) are fixed by the applications
-
 
 ## Networks
 
@@ -151,7 +143,6 @@ Compose networks map to K8S **NetworkPolicies** ([`k8s/network-policies.yaml`](k
 - Pods can only talk to others with the same network label
 - Requires a CNI that enforces policies (Calico, Cilium). Minikube's default may not.
 
-
 ## Traefik in production
 
 No Docker socket in K8S, so Traefik switches to file-based routing via ConfigMap ([`k8s/traefik-routes.yaml`](k8s/traefik-routes.yaml)).
@@ -161,21 +152,19 @@ No Docker socket in K8S, so Traefik switches to file-based routing via ConfigMap
 | Provider     | Docker socket              | File (ConfigMap)                                    |
 | Dashboard    | On                         | Off                                                 |
 | Log level    | `DEBUG`                    | `WARN`                                              |
-| Host rules   | `Host(\`localhost\`)`      | `Host(\`${DOMAIN}\`)`                               |
+| Host rules   | `Host(\`localhost\`)`      | `Host(\`${BACKEND_DOMAIN}\`)`                       |
 | Service URLs | `http://auth_service:8080` | `http://auth-service.bidder.svc.cluster.local:8080` |
 
-Set production domain:
+Set production domains in [`k8s/values.yaml`](k8s/values.yaml), then:
 
 ```bash
-export DOMAIN=bidder.yourdomain.com
+source ./load-values.sh k8s/values.yaml
 envsubst < k8s/traefik-routes.yaml | kubectl apply -f -
 ```
-
 
 ## Nginx
 
 Not included in production. The dev `nginx/` layer just simulates TLS termination with mkcert. In production, TLS is handled in front of the cluster (server Nginx or cloud LB).
-
 
 ## Full deployment
 
@@ -189,48 +178,28 @@ minikube start
 kubectl apply -f k8s/namespace.yaml
 
 # 3. secrets and config
-kubectl create secret generic auth-db-secret       --from-env-file=../.env.auth_db       -n bidder
-kubectl create secret generic auth-service-secret   --from-env-file=../.env.auth_service   -n bidder
-kubectl create secret generic users-db-secret       --from-env-file=../.env.users_db       -n bidder
-kubectl create secret generic user-service-secret   --from-env-file=../.env.user_service   -n bidder
-kubectl create secret generic policy-db-secret      --from-env-file=../.env.policy_db      -n bidder
-kubectl create secret generic policy-service-secret --from-env-file=../.env.policy_service  -n bidder
-kubectl create secret generic bids-service-secret   --from-env-file=../.env.bids_service   -n bidder
-kubectl create secret generic traefik-secret        --from-env-file=../.env.traefik        -n bidder
-kubectl create configmap shared-config              --from-env-file=../.env.shared          -n bidder
-kubectl create configmap bidder-frontend-config     --from-env-file=../.env.bidder_frontend -n bidder
+./create-k8s-secrets.sh ..
 
-# 4. network policies
+# 4. load values from values.yaml
+source ./load-values.sh k8s/values.yaml
+
+# 5. network policies
 kubectl apply -f k8s/network-policies.yaml
 
-# 5. persistent volumes
-export AUTH_DB_HOST_PATH=/data/bidder/postgres/auth_db
-export USERS_DB_HOST_PATH=/data/bidder/postgres/users_db
-export POLICY_DB_HOST_PATH=/data/bidder/policy_db
-export POLICY_CACHE_HOST_PATH=/data/bidder/redis/policy_cache
-export USERS_CACHE_HOST_PATH=/data/bidder/redis/users_cache
+# 6. persistent volumes
 envsubst < k8s/volumes.yaml | kubectl apply -f -
 
-# 6. databases and caches
+# 7. databases and caches
 kubectl apply -f k8s/databases.yaml
 
-# 7. traefik
+# 8. traefik
 kubectl apply -f k8s/traefik.yaml
-kubectl apply -f k8s/traefik-routes.yaml
+envsubst < k8s/traefik-routes.yaml | kubectl apply -f -
 
-# 8. application services
-export AWS_ACCOUNT_ID=123456789012
-export AWS_REGION=eu-west-2
-export ECR_PULL_SECRET=ecr-pull-secret
-export AUTH_SERVICE_VERSION=1.0.0
-export USER_SERVICE_VERSION=1.0.0
-export POLICY_SERVICE_VERSION=1.0.0
-export BIDS_SERVICE_VERSION=1.0.0
-export FRONTEND_VERSION=1.0.0
-export DOMAIN=localhost
+# 9. application services
 envsubst < k8s/services.yaml | kubectl apply -f -
 
-# 9. verify
+# 10. verify
 kubectl get pods -n bidder
 kubectl get services -n bidder
 ```
@@ -241,7 +210,6 @@ Access on minikube:
 minikube service traefik -n bidder
 minikube service bidder-frontend -n bidder
 ```
-
 
 ## Kompose
 
@@ -261,17 +229,16 @@ Output needs manual fixes:
 
 Manifests in `k8s/` are already adjusted.
 
-
 ## Deploying to EC2 (AL2)
 
 ### Install dependencies
 
 ```bash
-# Docker
-sudo yum install -y docker
-sudo systemctl enable docker && sudo systemctl start docker
-sudo usermod -aG docker ec2-user
-# log out and back in for group change
+# # Docker
+# sudo yum install -y docker
+# sudo systemctl enable docker && sudo systemctl start docker
+# sudo usermod -aG docker ec2-user
+# # log out and back in for group change
 
 # kubectl
 curl -LO "https://dl.k8s.io/release/$(curl -Ls https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
@@ -323,46 +290,26 @@ minikube start --driver=docker
 
 kubectl apply -f deploy/k8s/namespace.yaml
 
-# secrets
-kubectl create secret generic auth-db-secret       --from-env-file=.env.auth_db       -n bidder
-kubectl create secret generic auth-service-secret   --from-env-file=.env.auth_service   -n bidder
-kubectl create secret generic users-db-secret       --from-env-file=.env.users_db       -n bidder
-kubectl create secret generic user-service-secret   --from-env-file=.env.user_service   -n bidder
-kubectl create secret generic policy-db-secret      --from-env-file=.env.policy_db      -n bidder
-kubectl create secret generic policy-service-secret --from-env-file=.env.policy_service  -n bidder
-kubectl create secret generic bids-service-secret   --from-env-file=.env.bids_service   -n bidder
-kubectl create secret generic traefik-secret        --from-env-file=.env.traefik        -n bidder
-kubectl create configmap shared-config              --from-env-file=.env.shared          -n bidder
-kubectl create configmap bidder-frontend-config     --from-env-file=.env.bidder_frontend -n bidder
+# secrets and config
+deploy/create-k8s-secrets.sh .
+
+# load values
+source deploy/load-values.sh deploy/k8s/values.yaml
 
 # network policies
 kubectl apply -f deploy/k8s/network-policies.yaml
 
 # volumes
-export AUTH_DB_HOST_PATH=/data/bidder/postgres/auth_db
-export USERS_DB_HOST_PATH=/data/bidder/postgres/users_db
-export POLICY_DB_HOST_PATH=/data/bidder/policy_db
-export POLICY_CACHE_HOST_PATH=/data/bidder/redis/policy_cache
-export USERS_CACHE_HOST_PATH=/data/bidder/redis/users_cache
 envsubst < deploy/k8s/volumes.yaml | kubectl apply -f -
 
 # databases and caches
 kubectl apply -f deploy/k8s/databases.yaml
 
 # traefik
-export DOMAIN=bidder.yourdomain.com
-envsubst < deploy/k8s/traefik-routes.yaml | kubectl apply -f -
 kubectl apply -f deploy/k8s/traefik.yaml
+envsubst < deploy/k8s/traefik-routes.yaml | kubectl apply -f -
 
 # services
-export AWS_ACCOUNT_ID=123456789012
-export AWS_REGION=eu-west-2
-export ECR_PULL_SECRET=ecr-pull-secret
-export AUTH_SERVICE_VERSION=1.0.0
-export USER_SERVICE_VERSION=1.0.0
-export POLICY_SERVICE_VERSION=1.0.0
-export BIDS_SERVICE_VERSION=1.0.0
-export FRONTEND_VERSION=1.0.0
 envsubst < deploy/k8s/services.yaml | kubectl apply -f -
 
 # verify
@@ -422,3 +369,49 @@ kubectl get events -n bidder --sort-by=.lastTimestamp      # events
 kubectl top pods -n bidder                                # resource usage
 kubectl rollout status deployment/auth-service -n bidder  # rollout progress
 ```
+
+### Restarting deployments
+
+To restart all deployments (e.g. after pushing new images with the same tag):
+
+```bash
+kubectl rollout restart deployment -n bidder
+```
+
+To restart a single service:
+
+```bash
+kubectl rollout restart deployment/auth-service -n bidder
+```
+
+### Nuking the namespace
+
+To tear down everything and start fresh, delete the namespace:
+
+```bash
+kubectl delete namespace bidder
+```
+
+This removes all resources within it (Deployments, Services, Pods, Secrets, ConfigMaps, PVCs). PersistentVolumes are cluster-scoped and must be deleted separately:
+
+```bash
+kubectl delete pv -l app -A
+```
+
+Then re-run the full deployment steps from the [Full deployment](#full-deployment) section.
+
+### Stopping and starting the cluster
+
+To stop minikube (frees port bindings and CPU/memory, but preserves all state):
+
+```bash
+minikube stop
+```
+
+To start it back up:
+
+```bash
+minikube start
+```
+
+All deployments, services, secrets, and volumes are retained across stop/start. Pods will resume automatically. This is the equivalent of Docker stop and Docker start.

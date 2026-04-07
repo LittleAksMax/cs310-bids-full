@@ -1,6 +1,6 @@
 # Traefik dynamic routing config for K8S.
 # The Host() rules use the domain from values.yaml.
-# Replace ${DOMAIN} with your actual production domain.
+# Replace ${BACKEND_DOMAIN} with your actual production API domain.
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -12,7 +12,7 @@ data:
     http:
       routers:
         auth-router:
-          rule: "Host(`${DOMAIN}`) && (PathPrefix(`/auth/register`) || PathPrefix(`/auth/login`) || PathPrefix(`/auth/logout`) || PathPrefix(`/auth/refresh`) || Path(`/auth/health`))"
+          rule: "Host(`${BACKEND_DOMAIN}`) && (PathPrefix(`/auth/register`) || PathPrefix(`/auth/login`) || PathPrefix(`/auth/logout`) || PathPrefix(`/auth/refresh`) || Path(`/auth/health`))"
           service: auth_service
           entryPoints:
             - web
@@ -33,7 +33,7 @@ data:
     http:
       routers:
         policy-router:
-          rule: "Host(`${DOMAIN}`) && (PathPrefix(`/policies`) || PathPrefix(`/policies/health`) || PathPrefix(`/internal/policies`) || PathPrefix(`/convert`))"
+          rule: "Host(`${BACKEND_DOMAIN}`) && (PathPrefix(`/policies`) || PathPrefix(`/policies/health`) || PathPrefix(`/internal/policies`) || PathPrefix(`/convert`))"
           service: policy_service
           entryPoints:
             - web
@@ -60,7 +60,7 @@ data:
     http:
       routers:
         users-router:
-          rule: "Host(`${DOMAIN}`) && (PathPrefix(`/user`) || PathPrefix(`/user/health`) || PathPrefix(`/internal/users`) || PathPrefix(`/lwa`))"
+          rule: "Host(`${BACKEND_DOMAIN}`) && (PathPrefix(`/user`) || PathPrefix(`/user/health`) || PathPrefix(`/internal/users`) || PathPrefix(`/lwa`))"
           service: users_service
           entryPoints:
             - web

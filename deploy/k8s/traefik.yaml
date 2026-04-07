@@ -63,6 +63,8 @@ spec:
           envFrom:
             - secretRef:
                 name: traefik-secret
+            - secretRef:
+                name: shared-secret
             - configMapRef:
                 name: shared-config
           volumeMounts:

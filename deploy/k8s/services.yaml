@@ -37,6 +37,10 @@ spec:
             - secretRef:
                 name: auth-service-secret
             - configMapRef:
+                name: auth-service-config
+            - secretRef:
+                name: shared-secret
+            - configMapRef:
                 name: shared-config
 ---
 apiVersion: v1
@@ -83,6 +87,10 @@ spec:
           envFrom:
             - secretRef:
                 name: policy-service-secret
+            - configMapRef:
+                name: policy-service-config
+            - secretRef:
+                name: shared-secret
             - configMapRef:
                 name: shared-config
 ---
@@ -131,6 +139,10 @@ spec:
             - secretRef:
                 name: user-service-secret
             - configMapRef:
+                name: user-service-config
+            - secretRef:
+                name: shared-secret
+            - configMapRef:
                 name: shared-config
 ---
 apiVersion: v1
@@ -175,6 +187,10 @@ spec:
           envFrom:
             - secretRef:
                 name: bids-service-secret
+            - configMapRef:
+                name: bids-service-config
+            - secretRef:
+                name: shared-secret
             - configMapRef:
                 name: shared-config
 ---
