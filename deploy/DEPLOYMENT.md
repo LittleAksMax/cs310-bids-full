@@ -138,7 +138,12 @@ source ./load-values.sh k8s/values.yaml
 envsubst < k8s/volumes.yaml | kubectl apply -f -
 ```
 
-- Minikube: paths resolve inside the VM, not on host. Mount with `minikube mount /host/path:/data/bidder`
+- `minikube`: paths resolve inside the VM/container, not on host. With the Docker driver, `minikube mount` does not work (9p unsupported). Instead, pass the mount at startup
+
+```bash
+minikube start --driver=docker --mount --mount-string="/host/path:/data/bidder"
+```
+
 - Container-side paths (`/var/lib/postgresql/data`, `/data/db`, etc.) are fixed by the applications
 
 ## Networks
@@ -263,7 +268,7 @@ Then access:
 ```bash
 cd deploy
 
-# 1. start cluster
+# 1. start cluster (add --mount flags if using Docker driver)
 minikube start
 
 # 2. namespace
@@ -298,9 +303,6 @@ envsubst < k8s/traefik-routes.yaml | kubectl apply -f -
 
 # 10. application services
 envsubst < k8s/services.yaml | kubectl apply -f -
-
-# 11. mount data directory
-minikube mount /path/on/host:/data/bidder
 
 # 11. verify
 kubectl get pods -n bidder
@@ -394,7 +396,7 @@ scp .env.* ec2-user@<EC2_IP>:~/
 ### Deploy
 
 ```bash
-minikube start --driver=docker
+minikube start --driver=docker --mount --mount-string="/host/path:/data/bidder"
 
 kubectl apply -f deploy/k8s/namespace.yaml
 
