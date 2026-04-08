@@ -155,6 +155,22 @@ Compose networks map to K8S **NetworkPolicies** ([`k8s/network-policies.yaml`](k
 - Pods can only talk to others with the same network label
 - Requires a CNI that enforces policies (Calico, Cilium). Minikube's default may not.
 
+### Service discovery
+
+In K8S, services are resolved via DNS rather than Docker's container name networking. The fully qualified domain name for a service is:
+
+```
+http://<service-name>.<namespace>.svc.cluster.local:<port>
+```
+
+For example, to reach `auth-service` from another pod in the `bidder` namespace:
+
+```
+http://auth-service.bidder.svc.cluster.local:8080
+```
+
+Short names (e.g. `auth-service`) also resolve within the same namespace, but FQDNs are more explicit. Environment variables like `USER_SERVICE_BASE_URL` and `DATABASE_HOST` must use these K8S DNS names instead of Compose service names (e.g. `traefik:81` becomes `traefik.bidder.svc.cluster.local:81`).
+
 ## Traefik in production
 
 No Docker socket in K8S, so Traefik switches to file-based routing via ConfigMap ([`k8s/traefik-routes.yaml`](k8s/traefik-routes.yaml)).
